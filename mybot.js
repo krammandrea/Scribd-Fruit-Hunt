@@ -1,29 +1,28 @@
 function new_game() {
 
-    MYBOT.evil_bot.initalize_stolen_fruit();
+    APPLESFIRST.evil_bot.initalize_stolen_fruit();
 }
 
 function make_move() {
+//The starting strategy is to win one fruit category as fast as possible while ignoring what the opponent 
+//does at first, and rethink the itinerary whenever the opponent bot removes a fruit from the board.
 
-    if ((MYBOT.mybot.best_itinerary.length <= 1) || MYBOT.evil_bot.stole_a_fruit()){
-	MYBOT.boardmaster.board = get_board();
-	MYBOT.boardmaster.find_the_fruit();
-	MYBOT.boardmaster.research_fruits_to_win();
-	MYBOT.mybot.find_best_itinerary();
+    if ((APPLESFIRST.mybot.best_itinerary.length <= 1) || APPLESFIRST.evil_bot.stole_a_fruit()){
+    //when do I have to rethink my itinerary
+	APPLESFIRST.boardmaster.board = get_board();
+	APPLESFIRST.boardmaster.find_the_fruit();
+	APPLESFIRST.boardmaster.research_fruits_to_win();
+	APPLESFIRST.mybot.find_best_itinerary();
 	
-	trace(MYBOT.mybot.best_itinerary);
-	trace(MYBOT.mybot.best_cost);
+	trace(APPLESFIRST.mybot.best_itinerary);
     };    
 
-    //when do I have to rethink my itinerary
-
-    if (MYBOT.boardmaster.is_the_game_over() || MYBOT.mybot.best_itinerary.length<2){
-	trace("PASS");
+    if (APPLESFIRST.boardmaster.is_the_game_over() || APPLESFIRST.mybot.best_itinerary.length<2){
 	return PASS;
     }
     else{
-        var westeast = MYBOT.mybot.best_itinerary[1].x - get_my_x();
-        var northsouth = MYBOT.mybot.best_itinerary[1].y - get_my_y();
+        var westeast = APPLESFIRST.mybot.best_itinerary[1].x - get_my_x();
+        var northsouth = APPLESFIRST.mybot.best_itinerary[1].y - get_my_y();
     
         if (westeast > 0){
 	   return EAST;
@@ -40,32 +39,28 @@ function make_move() {
             }
 	    else{
 		//found the next stop, pick up fruit
-		MYBOT.mybot.best_itinerary.splice(1,1);
-		trace("TAKE");
+		APPLESFIRST.mybot.best_itinerary.splice(1,1);
         	return TAKE;
 	    };
         };
     };
-	
-
 }
 
 function trace(mesg) {
    console.log(mesg);
 }
 
-var MYBOT = {
+
+var APPLESFIRST = {
 
     mybot:{
-    //he will decide where to go
+    //will decide where to go
 
 	Position: function (my_x,my_y){
 	    this.x = my_x;
 	    this.y = my_y;
 	},
 
-	
-	itinerary: [],
 	best_itinerary:[],
 	best_cost: 0 ,
 
@@ -73,19 +68,16 @@ var MYBOT = {
 	    for(var stop=0;stop<itinerary.length;stop+=1){
 		if (fruit === itinerary[stop]){
 		    return true;
-		    trace("stole a fruit");
 		};
 	    };
 	    return false;
 	},
+
 	overwrite_itinerary:function (copy_to,source){
 	    copy_to.splice(0,copy_to.length);
 	    for (var stop = 0; stop < source.length; stop +=1){
 		copy_to.push(source[stop]);
 	    };
-	},
-
-	take_shortes_route_to: function(){
 	},
 
 	find_best_itinerary: function (current_itinerary,current_cost){
@@ -94,43 +86,46 @@ var MYBOT = {
 	    current_itinerary.push(my_position);
 	    var current_cost = 0; 
 	    this.best_cost= HEIGHT*WIDTH*HEIGHT*WIDTH; //start with maximum possible cost
-	    this.max_move(current_itinerary,current_cost);
+	    for(var type=1;type<get_number_of_item_types()+1;type+=1){  
+		//concentrate on one kind of fruit    
+		this.max_move(current_itinerary,current_cost,type);
+	    };
 	},
 	
-	max_move: function(current_itinerary,current_cost){
-	    for(var type=1;type<get_number_of_item_types()+1;type+=1){  
-	    //concentrate on one kind of fruit    
-		for (var cfruit=0;cfruit<MYBOT.boardmaster.fruits[type].length;cfruit+=1){
-		    if ((!this.is_member_of(MYBOT.boardmaster.fruits[type][cfruit],current_itinerary))&&
-		    MYBOT.boardmaster.how_many_fruits_to_win[type]<=MYBOT.boardmaster.fruits[type].length &&
-		    MYBOT.boardmaster.how_many_fruits_to_win[type]>0){
-		    //not going to any fruit twice AND
-		    //there are enough fruits of that type on the board to win 
-			current_itinerary.push(MYBOT.boardmaster.fruits[type][cfruit]);
-
-			var current_leg_cost = MYBOT.boardmaster.calculate_travel_cost
-						(current_itinerary[current_itinerary.length-1],
-						 current_itinerary[current_itinerary.length-2]);
-			current_cost += current_leg_cost + 1;
-			//+1 for pick up cost
-
-			if (this.best_cost > current_cost){
-			//prune if travel cost is too expensive
-			    if(current_itinerary.length > MYBOT.boardmaster.how_many_fruits_to_win[type]){
-			    //does the itinerary have enough fruit to win?
-				this.overwrite_itinerary(this.best_itinerary,current_itinerary);
-				this.best_cost = current_cost;
-			    }
-			    else{
-				this.max_move(current_itinerary,current_cost);
-			    };
-			};
-			current_itinerary.pop();
-			//TODO bug different kind of fruit in one itinerary
-			current_cost -= (current_leg_cost + 1);
-		    };
-		};
-	    };
+	max_move: function(current_itinerary,current_cost,type){
+	//generate itineraries covering only one type of fruit and pick the one which will give you a win
+	//fastest for any type of fruit
+        for (var cfruit=0;cfruit<APPLESFIRST.boardmaster.fruits[type].length;cfruit+=1){
+            if ((!this.is_member_of(APPLESFIRST.boardmaster.fruits[type][cfruit],current_itinerary))
+	    &&
+	    APPLESFIRST.boardmaster.how_many_fruits_to_win[type]<=APPLESFIRST.boardmaster.fruits[type].length 
+	    &&
+            APPLESFIRST.boardmaster.how_many_fruits_to_win[type]>0){
+            //not going to any fruit twice AND
+            //there are enough fruits of that type on the board to win 
+        	current_itinerary.push(APPLESFIRST.boardmaster.fruits[type][cfruit]);
+    
+        	var current_leg_cost = APPLESFIRST.boardmaster.calculate_travel_cost
+        				(current_itinerary[current_itinerary.length-1],
+        				 current_itinerary[current_itinerary.length-2]);
+        	current_cost += current_leg_cost + 1;
+        	//+1 for pick up cost
+    
+        	if (this.best_cost > current_cost){
+        	//prune if travel cost gets too expensive
+        	    if(current_itinerary.length > APPLESFIRST.boardmaster.how_many_fruits_to_win[type]){
+        	    //does the itinerary have enough fruit to win?
+        		this.overwrite_itinerary(this.best_itinerary,current_itinerary);
+        		this.best_cost = current_cost;
+        	    }
+        	    else{
+        		this.max_move(current_itinerary,current_cost,type);
+        	    };
+        	};
+        	current_itinerary.pop();
+        	current_cost -= (current_leg_cost + 1);
+            };
+    	};
 	},
     },
 
@@ -148,10 +143,10 @@ var MYBOT = {
 		if (current_stolen_fruit[type] > this.stolen_fruit[type]){
 		    this.stolen_fruit[type] = current_stolen_fruit[type];
 		    trace("stolen fruit");
-		    return 1;
+		    return true;
 		};
 	    };
-	    return 0;
+	    return false;
 
 	}
     },
@@ -170,15 +165,9 @@ var MYBOT = {
 	create_fruits_array: function (){
 	    var fruits_array = new Array(get_number_of_item_types()+1);
 	    for (var type=1; type<get_number_of_item_types()+1;type+=1){
-		fruits_array[type]= new Array(0); //Array(0) gives jQuery error
+		fruits_array[type]= new Array(0); 	  
 	    };
 	    return fruits_array;
-	},
-
-
-	calculate_travel_cost: function(start,end){
-	    var cost = Math.abs(start.x-end.x) + Math.abs(start.y-end.y);
-	    return cost;
 	},
 
 	find_the_fruit: function () { 
@@ -197,12 +186,18 @@ var MYBOT = {
 	    //what's the minimum number of fruit of each category I need for winning 
 	    for(var type=1; type<get_number_of_item_types()+1; type+=1){
 		//fruittypes start with 1
-		this.how_many_fruits_to_win[type]=Math.ceil(Math.ceil((get_total_item_count(type)+0.3)/2)-get_my_item_count(type));
+		this.how_many_fruits_to_win[type]=Math.ceil
+		    (Math.ceil((get_total_item_count(type)+0.3)/2)-get_my_item_count(type));
 		//0.3 random float in between 0.0 and 0.5 
 		//outer round up to account for the half fruit that got destroyed
 	    };
 	    trace("fruits to win:")
 	    trace(this.how_many_fruits_to_win);
+	},
+	
+	calculate_travel_cost: function(start,end){
+	    var cost = Math.abs(start.x-end.x) + Math.abs(start.y-end.y);
+	    return cost;
 	},
 	
 	is_the_game_over: function (){
@@ -215,8 +210,7 @@ var MYBOT = {
 	    };
 	    return game_over;
 	}
-
 	
-    },
+    }
 
 }
