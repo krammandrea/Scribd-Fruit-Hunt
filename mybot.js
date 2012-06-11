@@ -14,7 +14,6 @@ function make_move() {
 	APPLESFIRST.boardmaster.research_fruits_to_win();
 	APPLESFIRST.mybot.find_best_itinerary();
 	
-	trace(APPLESFIRST.mybot.best_itinerary);
     };    
 
     if (APPLESFIRST.boardmaster.is_the_game_over() || APPLESFIRST.mybot.best_itinerary.length<2){
@@ -44,10 +43,6 @@ function make_move() {
 	    };
         };
     };
-}
-
-function trace(mesg) {
-   console.log(mesg);
 }
 
 
@@ -142,7 +137,6 @@ var APPLESFIRST = {
 		current_stolen_fruit[type] = get_opponent_item_count(type);
 		if (current_stolen_fruit[type] > this.stolen_fruit[type]){
 		    this.stolen_fruit[type] = current_stolen_fruit[type];
-		    trace("stolen fruit");
 		    return true;
 		};
 	    };
@@ -191,8 +185,6 @@ var APPLESFIRST = {
 		//0.3 random float in between 0.0 and 0.5 
 		//outer round up to account for the half fruit that got destroyed
 	    };
-	    trace("fruits to win:")
-	    trace(this.how_many_fruits_to_win);
 	},
 	
 	calculate_travel_cost: function(start,end){
